@@ -10,7 +10,7 @@ wave_folder = 'data/LJSpeech-1.1/wavs'
 # Train config                 #
 ################################
 
-fp16_run = False
+fp16_run = True
 epochs = 100000
 learning_rate = 1e-4
 sigma = 1.0
