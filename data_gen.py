@@ -1,6 +1,4 @@
-
 import argparse
-import json
 import os
 import random
 import sys
@@ -11,22 +9,23 @@ from scipy.io.wavfile import read
 
 # We're using the audio processing from TacoTron2 to make sure it matches
 sys.path.insert(0, 'tacotron2')
-from tacotron2.models.layers import TacotronSTFT
+from layers import TacotronSTFT
 
-from config import training_files, segment_length, filter_length, hop_length, win_length, sampling_rate, mel_fmin, \
-    mel_fmax
+from config import wave_folder, segment_length, filter_length, hop_length, win_length, sampling_rate, \
+    mel_fmin, mel_fmax
 
 MAX_WAV_VALUE = 32768.0
 
 
-def files_to_list(filename):
+def files_to_list(filename, split="|"):
     """
     Takes a text file of filenames and makes a list of filenames
     """
     with open(filename, encoding='utf-8') as f:
-        files = f.readlines()
+        lines = f.readlines()
 
-    files = [f.rstrip() for f in files]
+    # files = [f.rstrip() for f in files]
+    files = [line.strip().replace('DUMMY', wave_folder).split(split)[0] for line in lines]
     return files
 
 
@@ -44,8 +43,8 @@ class LJSpeechDataset(torch.utils.data.Dataset):
     spectrogram, audio pair.
     """
 
-    def __init__(self):
-        self.audio_files = files_to_list(training_files)
+    def __init__(self, audiopaths_and_text):
+        self.audio_files = files_to_list(audiopaths_and_text)
         random.seed(1234)
         random.shuffle(self.audio_files)
         self.stft = TacotronSTFT(filter_length=filter_length,

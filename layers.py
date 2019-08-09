@@ -2,7 +2,7 @@ import torch
 from audio_processing import dynamic_range_compression
 from audio_processing import dynamic_range_decompression
 from librosa.filters import mel as librosa_mel_fn
-from .stft import STFT
+from stft import STFT
 
 
 class LinearNorm(torch.nn.Module):

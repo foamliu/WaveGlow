@@ -4,7 +4,7 @@ from tensorboardX import SummaryWriter
 # from torch import nn
 from tqdm import tqdm
 
-from config import device, print_freq, learning_rate, sigma, epochs
+from config import device, print_freq, learning_rate, sigma, epochs, training_files, validation_files
 from data_gen import LJSpeechDataset
 from models import WaveGlow, WaveGlowLoss
 from utils import parse_args, save_checkpoint, AverageMeter, get_logger
@@ -43,10 +43,10 @@ def train_net(args):
     criterion = WaveGlowLoss(sigma)
 
     # Custom dataloaders
-    train_dataset = LJSpeechDataset()
+    train_dataset = LJSpeechDataset(training_files)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
                                                num_workers=args.num_workers)
-    valid_dataset = LJSpeechDataset()
+    valid_dataset = LJSpeechDataset(validation_files)
     valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False,
                                                num_workers=args.num_workers)
 
@@ -60,12 +60,6 @@ def train_net(args):
                            epoch=epoch,
                            logger=logger)
         writer.add_scalar('Train_Loss', train_loss, epoch)
-
-        lr = optimizer.lr
-        print('\nLearning rate: {}'.format(lr))
-        writer.add_scalar('Learning_Rate', lr, epoch)
-        step_num = optimizer.step_num
-        print('Step num: {}\n'.format(step_num))
 
         # One epoch's validation
         valid_loss = valid(valid_loader=valid_loader,
@@ -127,17 +121,16 @@ def valid(valid_loader, model, criterion, logger):
     losses = AverageMeter()
 
     # Batches
-    for data in tqdm(valid_loader):
+    for batch in tqdm(valid_loader):
         # Move to GPU, if available
-        padded_input, padded_target, input_lengths = data
-        padded_input = padded_input.to(device)
-        padded_target = padded_target.to(device)
-        input_lengths = input_lengths.to(device)
+        mel, audio = batch
+        mel = mel.to(device)
+        audio = audio.to(device)
 
         with torch.no_grad():
             # Forward prop.
-            pred, gold = model(padded_input, input_lengths, padded_target)
-            loss, n_correct = cal_performance(pred, gold, smoothing=args.label_smoothing)
+            outputs = model((mel, audio))
+            loss = criterion(outputs)
 
         # Keep track of metrics
         losses.update(loss.item())

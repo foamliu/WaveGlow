@@ -24,7 +24,8 @@ with_tensorboard = False
 # Data config                  #
 ################################
 
-training_files = "train_files.txt"
+training_files = 'filelists/ljs_audio_text_train_filelist.txt'
+validation_files = 'filelists/ljs_audio_text_val_filelist.txt'
 segment_length = 16000
 sampling_rate = 22050
 filter_length = 1024
