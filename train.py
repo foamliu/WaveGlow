@@ -23,7 +23,7 @@ def train_net(args):
     if checkpoint is None:
         # model
         model = WaveGlow()
-        print(model)
+        # print(model)
         # model = nn.DataParallel(model)
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
