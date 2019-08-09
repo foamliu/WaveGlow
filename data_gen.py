@@ -38,7 +38,7 @@ def load_wav_to_torch(full_path):
     return torch.from_numpy(data).float(), sampling_rate
 
 
-class Mel2Samp(torch.utils.data.Dataset):
+class LJSpeechDataset(torch.utils.data.Dataset):
     """
     This is the main class that calculates the spectrogram and returns the
     spectrogram, audio pair.
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     with open(args.config) as f:
         data = f.read()
 
-    mel2samp = Mel2Samp()
+    mel2samp = LJSpeechDataset()
 
     filepaths = files_to_list(args.filelist_path)
 

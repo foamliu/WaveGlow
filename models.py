@@ -28,6 +28,8 @@ import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
 
+from config import n_mel_channels, n_flows, n_group, n_early_every, n_early_size, n_layers, n_channels, kernel_size
+
 
 @torch.jit.script
 def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
@@ -109,8 +111,7 @@ class WN(torch.nn.Module):
     size reset.  The dilation only doubles on each layer
     """
 
-    def __init__(self, n_in_channels, n_mel_channels, n_layers, n_channels,
-                 kernel_size):
+    def __init__(self, n_in_channels, n_mel_channels):
         super(WN, self).__init__()
         assert (kernel_size % 2 == 1)
         assert (n_channels % 2 == 0)
@@ -177,8 +178,7 @@ class WN(torch.nn.Module):
 
 
 class WaveGlow(torch.nn.Module):
-    def __init__(self, n_mel_channels, n_flows, n_group, n_early_every,
-                 n_early_size, WN_config):
+    def __init__(self):
         super(WaveGlow, self).__init__()
 
         self.upsample = torch.nn.ConvTranspose1d(n_mel_channels,
@@ -202,7 +202,7 @@ class WaveGlow(torch.nn.Module):
                 n_half = n_half - int(self.n_early_size / 2)
                 n_remaining_channels = n_remaining_channels - self.n_early_size
             self.convinv.append(Invertible1x1Conv(n_remaining_channels))
-            self.WN.append(WN(n_half, n_mel_channels * n_group, **WN_config))
+            self.WN.append(WN(n_half, n_mel_channels * n_group))
         self.n_remaining_channels = n_remaining_channels  # Useful during inference
 
     def forward(self, forward_input):

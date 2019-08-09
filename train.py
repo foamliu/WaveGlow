@@ -4,8 +4,8 @@ from tensorboardX import SummaryWriter
 # from torch import nn
 from tqdm import tqdm
 
-from config import device, print_freq
-from data_gen import AiShellDataset, pad_collate
+from config import device, print_freq, learning_rate, sigma, epochs
+from data_gen import LJSpeechDataset
 from models import WaveGlow, WaveGlowLoss
 from utils import parse_args, save_checkpoint, AverageMeter, get_logger
 
@@ -22,8 +22,8 @@ def train_net(args):
     # Initialize / load checkpoint
     if checkpoint is None:
         # model
-        model = WaveGlow(**waveglow_config)
-        # print(model)
+        model = WaveGlow()
+        print(model)
         # model = nn.DataParallel(model)
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -40,20 +40,23 @@ def train_net(args):
     # Move to GPU, if available
     model = model.to(device)
 
+    criterion = WaveGlowLoss(sigma)
+
     # Custom dataloaders
-    train_dataset = AiShellDataset(args, 'train')
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, collate_fn=pad_collate,
-                                               pin_memory=True, shuffle=True, num_workers=args.num_workers)
-    valid_dataset = AiShellDataset(args, 'dev')
-    valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, collate_fn=pad_collate,
-                                               pin_memory=True, shuffle=False, num_workers=args.num_workers)
+    train_dataset = LJSpeechDataset()
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
+                                               num_workers=args.num_workers)
+    valid_dataset = LJSpeechDataset()
+    valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False,
+                                               num_workers=args.num_workers)
 
     # Epochs
-    for epoch in range(start_epoch, args.epochs):
+    for epoch in range(start_epoch, epochs):
         # One epoch's training
         train_loss = train(train_loader=train_loader,
                            model=model,
                            optimizer=optimizer,
+                           criterion=criterion,
                            epoch=epoch,
                            logger=logger)
         writer.add_scalar('Train_Loss', train_loss, epoch)
@@ -67,6 +70,7 @@ def train_net(args):
         # One epoch's validation
         valid_loss = valid(valid_loader=valid_loader,
                            model=model,
+                           criterion=criterion,
                            logger=logger)
         writer.add_scalar('Valid_Loss', valid_loss, epoch)
 
@@ -83,22 +87,21 @@ def train_net(args):
         save_checkpoint(epoch, epochs_since_improvement, model, optimizer, best_loss, is_best)
 
 
-def train(train_loader, model, optimizer, epoch, logger):
+def train(train_loader, model, optimizer, criterion, epoch, logger):
     model.train()  # train mode (dropout and batchnorm is used)
 
     losses = AverageMeter()
 
     # Batches
-    for i, (data) in enumerate(train_loader):
+    for i, (batch) in enumerate(train_loader):
         # Move to GPU, if available
-        padded_input, padded_target, input_lengths = data
-        padded_input = padded_input.to(device)
-        padded_target = padded_target.to(device)
-        input_lengths = input_lengths.to(device)
+        mel, audio = batch
+        mel = mel.to(device)
+        audio = audio.to(device)
 
         # Forward prop.
-        pred, gold = model(padded_input, input_lengths, padded_target)
-        loss, n_correct = cal_performance(pred, gold, smoothing=args.label_smoothing)
+        outputs = model((mel, audio))
+        loss = criterion(outputs)
 
         # Back prop.
         optimizer.zero_grad()
@@ -118,7 +121,7 @@ def train(train_loader, model, optimizer, epoch, logger):
     return losses.avg
 
 
-def valid(valid_loader, model, logger):
+def valid(valid_loader, model, criterion, logger):
     model.eval()
 
     losses = AverageMeter()
