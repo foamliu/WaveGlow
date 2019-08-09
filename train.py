@@ -45,10 +45,10 @@ def train_net(args):
     # Custom dataloaders
     train_dataset = LJSpeechDataset(training_files)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
-                                               num_workers=args.num_workers)
+                                               num_workers=1, pin_memory=False, drop_last=True)
     valid_dataset = LJSpeechDataset(validation_files)
     valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False,
-                                               num_workers=args.num_workers)
+                                               num_workers=1, pin_memory=False, drop_last=True)
 
     # Epochs
     for epoch in range(start_epoch, epochs):
