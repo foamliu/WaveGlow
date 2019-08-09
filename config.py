@@ -15,7 +15,7 @@ epochs = 100000
 learning_rate = 1e-4
 sigma = 1.0
 iters_per_checkpoint = 2000
-batch_size = 1
+batch_size = 6
 seed = 1234
 checkpoint_path = ""
 with_tensorboard = False
@@ -26,7 +26,7 @@ with_tensorboard = False
 
 training_files = 'filelists/ljs_audio_text_train_filelist.txt'
 validation_files = 'filelists/ljs_audio_text_val_filelist.txt'
-segment_length = 12000
+segment_length = 16000
 sampling_rate = 22050
 filter_length = 1024
 hop_length = 256
@@ -45,5 +45,5 @@ n_early_every = 4
 n_early_size = 2
 # WN_config
 n_layers = 8
-n_channels = 128
+n_channels = 256
 kernel_size = 3
